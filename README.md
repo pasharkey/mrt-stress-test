@@ -5,7 +5,7 @@ A React 18 + Material React Table v3 stress test with:
 - **3,000 rows × 20 columns** of realistic fake data
 - **Per-column text filters** (inline subheader row)
 - **Row virtualization** — only visible rows are rendered in the DOM
-- **Column virtualisation** — only visible columns are rendered
+- **Column virtualization** — only visible columns are rendered
 - **Filter timing badge** — shows how long the last filter operation took
 - Compact density + sticky header for maximum data density
 - Global filter disabled (per-column only, faster for large datasets)
