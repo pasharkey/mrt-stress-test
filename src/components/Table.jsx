@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -41,6 +42,8 @@ function StatsBar({ filteredCount, totalCount, filterTime }) {
   );
 }
 
+// Derives MRT column definitions from a schema — the same pattern you'd use
+// when columns arrive dynamically from an API response.
 function buildColumnsFromSchema(schema) {
   return schema.map((col) => ({
     accessorKey: col.key,
@@ -54,6 +57,18 @@ function buildColumnsFromSchema(schema) {
       size: "small",
       sx: { "& input": { fontSize: "0.7rem", py: 0.5 } },
     },
+    ...(col.type === "link" && {
+      Cell: ({ cell }) => (
+        <Link
+          to={col.href(cell.getValue())}
+          style={{ color: "#1976d2", textDecoration: "none", fontWeight: 500 }}
+          onMouseOver={(e) => (e.target.style.textDecoration = "underline")}
+          onMouseOut={(e) => (e.target.style.textDecoration = "none")}
+        >
+          {cell.getValue()}
+        </Link>
+      ),
+    }),
   }));
 }
 

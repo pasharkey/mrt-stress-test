@@ -1,5 +1,15 @@
+// ── Column schema — simulates a dynamic API response ─────────────────────────
+// In a real app this would come from a fetch() call, not a static file.
+// The table derives its MRT column definitions from this at runtime.
+
 export const COLUMN_SCHEMA = [
-  { key: "id", label: "ID", width: 80 },
+  {
+    key: "id",
+    label: "ID",
+    width: 80,
+    type: "link",
+    href: (val) => `/records/${val}`,
+  },
   { key: "firstName", label: "First Name", width: 120 },
   { key: "lastName", label: "Last Name", width: 120 },
   { key: "email", label: "Email", width: 220 },
@@ -20,6 +30,8 @@ export const COLUMN_SCHEMA = [
   { key: "region", label: "Region", width: 100 },
   { key: "notes", label: "Notes", width: 160 },
 ];
+
+// ── Row data ──────────────────────────────────────────────────────────────────
 
 const FIRST_NAMES = [
   "Alice",
