@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -21,14 +21,13 @@ export default function ReportRowErrorDialog({
   open,
   onClose,
   selectedRows,
-  primaryRowId,
-  onPrimaryRowChange,
   reportPayload,
   onSave,
   isSaving,
   saveError,
 }) {
   const hasSelectedRows = selectedRows.length > 0;
+  const [primaryRowId, setPrimaryRowId] = useState(null);
   const {
     detailQueries,
     isFetchingDetails,
@@ -36,12 +35,31 @@ export default function ReportRowErrorDialog({
     rowDetailsById,
   } = useReportRowDetails(selectedRows, open);
 
+  useEffect(() => {
+    if (!open || selectedRows.length === 0) {
+      setPrimaryRowId(null);
+      return;
+    }
+
+    if (!primaryRowId || !selectedRows.some((row) => row.id === primaryRowId)) {
+      setPrimaryRowId(selectedRows[0].id);
+    }
+  }, [open, primaryRowId, selectedRows]);
+
   const hydratedReportPayload = useMemo(
-    () => ({
-      ...reportPayload,
-      rowDetailsById,
-    }),
-    [reportPayload, rowDetailsById],
+    () => {
+      const relatedRowIds = selectedRows
+        .map((row) => row.id)
+        .filter((rowId) => rowId !== primaryRowId);
+
+      return {
+        ...reportPayload,
+        primaryRowId,
+        relatedRowIds,
+        rowDetailsById,
+      };
+    },
+    [primaryRowId, reportPayload, rowDetailsById, selectedRows],
   );
 
   const handleSave = useCallback(async () => {
@@ -117,14 +135,14 @@ export default function ReportRowErrorDialog({
                   <ListItem
                     key={row.id}
                     secondaryAction={
-                      <Radio
-                        edge="end"
-                        checked={isPrimary}
-                        onChange={() => onPrimaryRowChange(row.id)}
-                        value={row.id}
-                        inputProps={{
-                          "aria-label": `Mark ${row.firstName} ${row.lastName} as primary`,
-                        }}
+                        <Radio
+                          edge="end"
+                          checked={isPrimary}
+                          onChange={() => setPrimaryRowId(row.id)}
+                          value={row.id}
+                          inputProps={{
+                            "aria-label": `Mark ${row.firstName} ${row.lastName} as primary`,
+                          }}
                       />
                     }
                   >

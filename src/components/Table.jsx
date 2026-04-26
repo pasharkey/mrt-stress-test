@@ -86,7 +86,6 @@ export default function Table({ data }) {
   const [rowSelection, setRowSelection] = useState({});
   const [selectedReportRows, setSelectedReportRows] = useState(() => new Map());
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
-  const [primaryRowId, setPrimaryRowId] = useState(null);
   const [filteredCount, setFilteredCount] = useState(data.length);
   const [filterTime, setFilterTime] = useState(null);
   const filterStartRef = useRef(null);
@@ -133,29 +132,19 @@ export default function Table({ data }) {
 
   useEffect(() => {
     if (selectedRowsList.length === 0) {
-      setPrimaryRowId(null);
       if (reportDialogOpen) {
         setReportDialogOpen(false);
       }
-      return;
     }
-
-    if (!primaryRowId || !selectedReportRows.has(primaryRowId)) {
-      setPrimaryRowId(selectedRowsList[0].id);
-    }
-  }, [primaryRowId, reportDialogOpen, selectedReportRows, selectedRowsList]);
+  }, [reportDialogOpen, selectedRowsList]);
 
   const reportPayload = useMemo(() => {
     const rowsById = Object.fromEntries(selectedReportRows.entries());
 
     return {
-      primaryRowId,
-      relatedRowIds: selectedRowsList
-        .map((row) => row.id)
-        .filter((rowId) => rowId !== primaryRowId),
       rowsById,
     };
-  }, [primaryRowId, selectedReportRows, selectedRowsList]);
+  }, [selectedReportRows]);
 
   const openReportDialog = useCallback(() => {
     if (selectedRowsList.length === 0) return;
@@ -303,8 +292,6 @@ export default function Table({ data }) {
         open={reportDialogOpen}
         onClose={closeReportDialog}
         selectedRows={selectedRowsList}
-        primaryRowId={primaryRowId}
-        onPrimaryRowChange={setPrimaryRowId}
         reportPayload={reportPayload}
         onSave={handleSaveReport}
         isSaving={saveEntityFeedbackMutation.isPending}
