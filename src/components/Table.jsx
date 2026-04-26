@@ -132,7 +132,7 @@ export default function Table({ data }) {
   );
 
   useEffect(() => {
-    if (selectedRowsList.length === 0) {
+    if (selectedRowsList.length < 2) {
       if (reportDialogOpen) {
         setReportDialogOpen(false);
       }
@@ -148,7 +148,7 @@ export default function Table({ data }) {
   }, [selectedReportRows]);
 
   const openReportDialog = useCallback(() => {
-    if (selectedRowsList.length === 0) return;
+    if (selectedRowsList.length < 2) return;
     saveEntityFeedbackMutation.reset();
     setReportDialogOpen(true);
   }, [saveEntityFeedbackMutation, selectedRowsList.length]);
@@ -277,7 +277,7 @@ export default function Table({ data }) {
             <ReportActions
               selectedCount={selectedRowsList.length}
               onOpenReportDialog={openReportDialog}
-              disabled={selectedRowsList.length === 0}
+              disabled={selectedRowsList.length < 2}
             />
           </Box>
         </Box>

@@ -27,7 +27,7 @@ export default function ReportRowErrorDialog({
   isSaving,
   saveError,
 }) {
-  const hasSelectedRows = selectedRows.length > 0;
+  const hasEnoughSelectedRows = selectedRows.length >= 2;
   const [primaryRowId, setPrimaryRowId] = useState(null);
   const [comments, setComments] = useState("");
   const {
@@ -38,7 +38,7 @@ export default function ReportRowErrorDialog({
   } = useReportRowDetails(selectedRows, open);
 
   useEffect(() => {
-    if (!open || selectedRows.length === 0) {
+    if (!open || selectedRows.length < 2) {
       setPrimaryRowId(null);
       setComments("");
       return;
@@ -93,11 +93,11 @@ export default function ReportRowErrorDialog({
   );
 
   const handleSave = useCallback(async () => {
-    if (isFetchingDetails || hasDetailErrors || !hasSelectedRows) return;
+    if (isFetchingDetails || hasDetailErrors || !hasEnoughSelectedRows) return;
     await onSave(hydratedReportPayload);
   }, [
     hasDetailErrors,
-    hasSelectedRows,
+    hasEnoughSelectedRows,
     hydratedReportPayload,
     isFetchingDetails,
     onSave,
@@ -128,9 +128,9 @@ export default function ReportRowErrorDialog({
           overflow: "hidden",
         }}
       >
-        {!hasSelectedRows ? (
+        {!hasEnoughSelectedRows ? (
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            Select at least one row before reporting an error.
+            Select at least two rows before opening an entity error report.
           </Typography>
         ) : (
           <>
@@ -319,7 +319,10 @@ export default function ReportRowErrorDialog({
           variant="contained"
           onClick={handleSave}
           disabled={
-            !hasSelectedRows || isFetchingDetails || hasDetailErrors || isSaving
+            !hasEnoughSelectedRows ||
+            isFetchingDetails ||
+            hasDetailErrors ||
+            isSaving
           }
           startIcon={
             isFetchingDetails || isSaving ? (
