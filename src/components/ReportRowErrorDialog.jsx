@@ -25,6 +25,8 @@ export default function ReportRowErrorDialog({
   onPrimaryRowChange,
   reportPayload,
   onSave,
+  isSaving,
+  saveError,
 }) {
   const hasSelectedRows = selectedRows.length > 0;
   const {
@@ -42,9 +44,9 @@ export default function ReportRowErrorDialog({
     [reportPayload, rowDetailsById],
   );
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (isFetchingDetails || hasDetailErrors || !hasSelectedRows) return;
-    onSave(hydratedReportPayload);
+    await onSave(hydratedReportPayload);
   }, [
     hasDetailErrors,
     hasSelectedRows,
@@ -94,6 +96,11 @@ export default function ReportRowErrorDialog({
               <Alert severity="error" sx={{ mb: 1.5 }}>
                 One or more row detail requests failed. Save stays disabled until
                 all detail requests succeed.
+              </Alert>
+            )}
+            {saveError && (
+              <Alert severity="error" sx={{ mb: 1.5 }}>
+                {saveError.message || "Unable to save entity feedback."}
               </Alert>
             )}
             <List dense sx={{ border: "1px solid #e0e0e0", borderRadius: 1 }}>
@@ -197,12 +204,16 @@ export default function ReportRowErrorDialog({
         <Button
           variant="contained"
           onClick={handleSave}
-          disabled={!hasSelectedRows || isFetchingDetails || hasDetailErrors}
+          disabled={
+            !hasSelectedRows || isFetchingDetails || hasDetailErrors || isSaving
+          }
           startIcon={
-            isFetchingDetails ? <CircularProgress size={14} color="inherit" /> : null
+            isFetchingDetails || isSaving ? (
+              <CircularProgress size={14} color="inherit" />
+            ) : null
           }
         >
-          Save
+          {isSaving ? "Saving..." : "Save"}
         </Button>
       </DialogActions>
     </Dialog>

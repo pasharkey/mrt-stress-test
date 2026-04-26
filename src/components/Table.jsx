@@ -14,6 +14,7 @@ import { Box, Chip, Typography } from "@mui/material";
 import { COLUMN_SCHEMA } from "../data/generateData.js";
 import ReportActions from "./ReportActions.jsx";
 import ReportRowErrorDialog from "./ReportRowErrorDialog.jsx";
+import { useSaveEntityFeedback } from "../hooks/useSaveEntityFeedback.js";
 
 function StatsBar({ filteredCount, totalCount, filterTime }) {
   return (
@@ -89,6 +90,11 @@ export default function Table({ data }) {
   const [filteredCount, setFilteredCount] = useState(data.length);
   const [filterTime, setFilterTime] = useState(null);
   const filterStartRef = useRef(null);
+  const saveEntityFeedbackMutation = useSaveEntityFeedback({
+    onSuccess: () => {
+      setReportDialogOpen(false);
+    },
+  });
 
   // useMemo here - we only want to rebuild column defs when
   // the schema actually changes — not on every render.
@@ -153,17 +159,19 @@ export default function Table({ data }) {
 
   const openReportDialog = useCallback(() => {
     if (selectedRowsList.length === 0) return;
+    saveEntityFeedbackMutation.reset();
     setReportDialogOpen(true);
-  }, [selectedRowsList.length]);
+  }, [saveEntityFeedbackMutation, selectedRowsList.length]);
 
   const closeReportDialog = useCallback(() => {
+    saveEntityFeedbackMutation.reset();
     setReportDialogOpen(false);
-  }, []);
+  }, [saveEntityFeedbackMutation]);
 
-  const handleSaveReport = useCallback((payload) => {
-    console.info("Simulated report payload ready for save", payload);
-    setReportDialogOpen(false);
-  }, []);
+  const handleSaveReport = useCallback(
+    async (payload) => saveEntityFeedbackMutation.mutateAsync(payload),
+    [saveEntityFeedbackMutation],
+  );
 
   const table = useMaterialReactTable({
     columns,
@@ -299,6 +307,8 @@ export default function Table({ data }) {
         onPrimaryRowChange={setPrimaryRowId}
         reportPayload={reportPayload}
         onSave={handleSaveReport}
+        isSaving={saveEntityFeedbackMutation.isPending}
+        saveError={saveEntityFeedbackMutation.error}
       />
     </>
   );
