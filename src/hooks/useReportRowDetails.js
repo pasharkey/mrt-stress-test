@@ -7,10 +7,12 @@ function simulateFetchRowDetails(row) {
   return new Promise((resolve) => {
     window.setTimeout(() => {
       resolve({
-        auditId: `AUD-${row.id}`,
+        qids: [
+          `q${Number(row.id) * 2 - 1}`,
+          `q${Number(row.id) * 2}`,
+        ],
         sourceSystem: `System ${((Number(row.id) % 3) + 1).toString()}`,
         reviewerHint: `${row.country} desk`,
-        lastSeenAt: `2026-04-${String((Number(row.id) % 25) + 1).padStart(2, "0")}`,
       });
     }, delay);
   });

@@ -117,6 +117,7 @@ export default function Table({ data }) {
         id: row.id,
         firstName: row.firstName,
         lastName: row.lastName,
+        dob: row.startDate,
         country: row.country,
         status: row.status,
       });
