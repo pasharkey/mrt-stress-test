@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  useEffect,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   MaterialReactTable,
@@ -6,6 +12,9 @@ import {
 } from "material-react-table";
 import { Box, Chip, Typography } from "@mui/material";
 import { COLUMN_SCHEMA } from "../data/generateData.js";
+import ReportActions from "./ReportActions.jsx";
+import ReportRowErrorDialog from "./ReportRowErrorDialog.jsx";
+import { useSaveEntityFeedback } from "../hooks/useSaveEntityFeedback.js";
 
 function StatsBar({ filteredCount, totalCount, filterTime }) {
   return (
@@ -74,9 +83,17 @@ function buildColumnsFromSchema(schema) {
 
 export default function Table({ data }) {
   const [columnFilters, setColumnFilters] = useState([]);
+  const [rowSelection, setRowSelection] = useState({});
+  const [selectedReportRows, setSelectedReportRows] = useState(() => new Map());
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [filteredCount, setFilteredCount] = useState(data.length);
   const [filterTime, setFilterTime] = useState(null);
   const filterStartRef = useRef(null);
+  const saveEntityFeedbackMutation = useSaveEntityFeedback({
+    onSuccess: () => {
+      setReportDialogOpen(false);
+    },
+  });
 
   // useMemo here - we only want to rebuild column defs when
   // the schema actually changes — not on every render.
@@ -87,13 +104,74 @@ export default function Table({ data }) {
     setColumnFilters(updaterOrValue);
   }, []);
 
+  useEffect(() => {
+    const nextSelectedRows = new Map();
+
+    Object.entries(rowSelection).forEach(([rowId, isSelected]) => {
+      if (!isSelected) return;
+
+      const row = data.find((item) => item.id === rowId);
+      if (!row) return;
+
+      nextSelectedRows.set(rowId, {
+        id: row.id,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        dob: row.startDate,
+        country: row.country,
+        status: row.status,
+      });
+    });
+
+    setSelectedReportRows(nextSelectedRows);
+  }, [data, rowSelection]);
+
+  const selectedRowsList = useMemo(
+    () => Array.from(selectedReportRows.values()),
+    [selectedReportRows],
+  );
+
+  useEffect(() => {
+    if (selectedRowsList.length < 2) {
+      if (reportDialogOpen) {
+        setReportDialogOpen(false);
+      }
+    }
+  }, [reportDialogOpen, selectedRowsList]);
+
+  const reportPayload = useMemo(() => {
+    const rowsById = Object.fromEntries(selectedReportRows.entries());
+
+    return {
+      rowsById,
+    };
+  }, [selectedReportRows]);
+
+  const openReportDialog = useCallback(() => {
+    if (selectedRowsList.length < 2) return;
+    saveEntityFeedbackMutation.reset();
+    setReportDialogOpen(true);
+  }, [saveEntityFeedbackMutation, selectedRowsList.length]);
+
+  const closeReportDialog = useCallback(() => {
+    saveEntityFeedbackMutation.reset();
+    setReportDialogOpen(false);
+  }, [saveEntityFeedbackMutation]);
+
+  const handleSaveReport = useCallback(
+    async (payload) => saveEntityFeedbackMutation.mutateAsync(payload),
+    [saveEntityFeedbackMutation],
+  );
+
   const table = useMaterialReactTable({
     columns,
     data,
+    getRowId: (originalRow) => originalRow.id,
 
     // ── Controlled state ───────────────────────────────────────────────────
-    state: { columnFilters, showColumnFilters: true },
+    state: { columnFilters, rowSelection, showColumnFilters: true },
     onColumnFiltersChange: handleColumnFiltersChange,
+    onRowSelectionChange: setRowSelection,
 
     // ── Filtering ──────────────────────────────────────────────────────────
     columnFilterDisplayMode: "subheader",
@@ -115,7 +193,7 @@ export default function Table({ data }) {
     enableStickyHeader: true,
     enableColumnResizing: true,
     enableGrouping: false,
-    enableRowSelection: false,
+    enableRowSelection: true,
     enableColumnOrdering: false,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
@@ -175,15 +253,51 @@ export default function Table({ data }) {
       }, [count]);
 
       return (
-        <StatsBar
-          filteredCount={count}
-          totalCount={data.length}
-          filterTime={filterTime}
-        />
+        <Box>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <StatsBar
+              filteredCount={count}
+              totalCount={data.length}
+              filterTime={filterTime}
+            />
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 1.5,
+              py: 1,
+              borderBottom: "1px solid #e0e0e0",
+            }}
+          >
+            <Typography variant="caption" sx={{ color: "#666" }}>
+              Selected for report: {selectedRowsList.length}
+            </Typography>
+            <ReportActions
+              selectedCount={selectedRowsList.length}
+              onOpenReportDialog={openReportDialog}
+              disabled={selectedRowsList.length < 2}
+            />
+          </Box>
+        </Box>
       );
     },
     renderBottomToolbar: () => null,
   });
 
-  return <MaterialReactTable table={table} />;
+  return (
+    <>
+      <MaterialReactTable table={table} />
+      <ReportRowErrorDialog
+        open={reportDialogOpen}
+        onClose={closeReportDialog}
+        selectedRows={selectedRowsList}
+        reportPayload={reportPayload}
+        onSave={handleSaveReport}
+        isSaving={saveEntityFeedbackMutation.isPending}
+        saveError={saveEntityFeedbackMutation.error}
+      />
+    </>
+  );
 }
